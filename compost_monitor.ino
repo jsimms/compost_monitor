@@ -23,7 +23,6 @@
 /* Todo
     - define ip/sitename and directory that we are sending data
          
-    - make humidity and temp a string 
     - send http request 
     
     - create send_request function 
@@ -67,7 +66,7 @@ const char* WIFI_PASS = "RHNNXM4FRSQXN73V";
 const int WIFI_SECURITY =  WLAN_SEC_WPA2; 
 
 // Set where you want to send requests 
-// ToDo: figure out why I have to use #define here to make getHostByName to work.  
+// ToDo: ask Adafruit why I have to use #define here to make getHostByName to work.  
 #define WEBSITE "www.adafruit.com"
 #define WEBPAGE "/testwifi/index.html"
 uint32_t ip; 
@@ -118,6 +117,7 @@ void setup(void)
     
     
   // Look up the website's IP address
+  // ToDo: Ask Adafruit how exactly this works. I couldn't figure out how an ip is returned by looking at the libraries
   ip = 0;
   Serial.print(WEBSITE); Serial.print(F(" -> "));
   while (ip == 0) {
@@ -148,11 +148,8 @@ void loop(void)
   float h = sht11.readHumidity();  
   
   // transform data to a string 
-  String temperature = String((float) t_f);
-  String humidity = String((float) h); 
-  
-  //String temperature = String((int) t);
-  //String humidity = String((int) h);
+  String temperature = String((int) t_f);
+  String humidity = String((int) h); 
   
   // print data to serial port 
   Serial.print("Temperature: ");
