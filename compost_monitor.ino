@@ -64,8 +64,8 @@ SHT1x sht11 (DATA_PIN, CLOCK_PIN);
 
 
 // Provide Your Wifi Network Information
-const char* WIFI_SSID = "R432Q"; // must be less than 32 characters 
-const char* WIFI_PASS = "RHNNXM4FRSQXN73V"; 
+const char* WIFI_SSID = ""; // must be less than 32 characters 
+const char* WIFI_PASS = ""; 
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2; 
 
