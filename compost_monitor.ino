@@ -22,10 +22,7 @@
  
 /* Todo
     - define ip/sitename and directory that we are sending data
-    
-    - connect to wifi network 
-    - check DHCP? 
-     
+         
     - make humidity and temp a string 
     - send http request 
     
@@ -64,12 +61,16 @@ SHT1x sht11 (DATA_PIN, CLOCK_PIN);
 
 
 // Provide Your Wifi Network Information
-const char* WIFI_SSID = ""; // must be less than 32 characters 
-const char* WIFI_PASS = ""; 
+const char* WIFI_SSID = "R432Q"; // must be less than 32 characters 
+const char* WIFI_PASS = "RHNNXM4FRSQXN73V"; 
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2; 
 
-
+// Set where you want to send requests 
+// ToDo: figure out why I have to use #define here to make getHostByName to work.  
+#define WEBSITE "www.adafruit.com"
+#define WEBPAGE "/testwifi/index.html"
+uint32_t ip; 
 
 void setup(void) 
 {
@@ -109,12 +110,27 @@ void setup(void)
     delay(100); // ToDo: Insert a DHCP timeout!
   }  
 
-  
-  
+   
   // Show the connection details 
   while (! displayConnectionDetails()) {
     delay(1000);
   }
+    
+    
+  // Look up the website's IP address
+  ip = 0;
+  Serial.print(WEBSITE); Serial.print(F(" -> "));
+  while (ip == 0) {
+    if (! cc3000.getHostByName(WEBSITE, &ip)) {
+      Serial.println(F("Couldn't resolve!"));
+    }
+    delay(500);
+  }
+  
+  cc3000.printIPdotsRev(ip);  
+  Serial.println("");
+
+
     
   // Close the connection   
   Serial.println(F("Closing connection..."));
@@ -127,21 +143,28 @@ void setup(void)
 
 void loop(void)
 {  
-  // create variables and read values from the sensor  
-  float temp_f = sht11.readTemperatureF(); 
-  float humidity = sht11.readHumidity();  
+  // create variables, get data from the sensor  
+  float t_f = sht11.readTemperatureF(); 
+  float h = sht11.readHumidity();  
   
-  // print it to serial port 
+  // transform data to a string 
+  String temperature = String((float) t_f);
+  String humidity = String((float) h); 
+  
+  //String temperature = String((int) t);
+  //String humidity = String((int) h);
+  
+  // print data to serial port 
   Serial.print("Temperature: ");
-  Serial.print(temp_f, DEC); 
+  Serial.print(temperature); 
   Serial.print(" F /");
   Serial.print("Humidity: ");
   Serial.print(humidity); 
   Serial.print("%"); 
   Serial.println(""); 
-  Serial.println(WIFI_SSID); 
-  Serial.println(WIFI_PASS);
-  Serial.println(WIFI_SECURITY); 
+  
+  // Send the request 
+  
   
   // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
   delay(4000); 
