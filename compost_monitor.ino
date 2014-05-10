@@ -64,36 +64,66 @@ SHT1x sht11 (DATA_PIN, CLOCK_PIN);
 
 
 // Provide Your Wifi Network Information
-const char* WIFI_SSID = ""; // must be less than 32 characters 
-const char* WIFI_PASS = ""; 
+const char* WIFI_SSID = "R432Q"; // must be less than 32 characters 
+const char* WIFI_PASS = "RHNNXM4FRSQXN73V"; 
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
-const int WLAN_SECURITY =  WLAN_SEC_UNSEC;  
-
-
+const int WIFI_SECURITY =  WLAN_SEC_WPA2; 
 
 
 
 void setup(void) 
 {
-  Serial.begin(9600); 
+  Serial.begin(115200); 
   Serial.println("If you start me up..."); 
   
-  /* Initialise the CC3000 */
-  Serial.println(F("\nInitialising the CC3000 ..."));
+  // Initialise the CC3000
+  Serial.println(F("\nInitialising the CC3000..."));
   if (!cc3000.begin())
   {
     Serial.println(F("Unable to initialise the CC3000! Check your wiring?"));
     while(1);
   }
   
-  /* Delete any old connection data on the module */
-  Serial.println(F("\nDeleting old connection profiles"));
+  // Delete old connection data 
+  Serial.println(F("Deleting old connection profiles..."));
   if (!cc3000.deleteProfiles()) {
     Serial.println(F("Failed!"));
     while(1);
   }
   
-}
+  // Connect to Wifi  
+  Serial.print(F("Attempting to connect to ")); Serial.print(WIFI_SSID); Serial.println(F("..."));
+  
+  if (!cc3000.connectToAP(WIFI_SSID, WIFI_PASS, WIFI_SECURITY)) {
+    Serial.println(F("Failed!"));
+    while(1);
+  }
+  
+  Serial.print(F("Connected to ")); Serial.print(WIFI_SSID); Serial.println(F("..."));
+  
+  
+  // Wait for DHCP to finish (why?) 
+  Serial.println(F("Request DHCP..."));
+  while (!cc3000.checkDHCP())
+  {
+    delay(100); // ToDo: Insert a DHCP timeout!
+  }  
+
+  
+  
+  // Show the connection details 
+  while (! displayConnectionDetails()) {
+    delay(1000);
+  }
+    
+  // Close the connection   
+  Serial.println(F("Closing connection..."));
+  cc3000.disconnect();
+  Serial.println(F("Connection closed."));  
+    
+ }
+  
+
 
 void loop(void)
 {  
@@ -111,11 +141,37 @@ void loop(void)
   Serial.println(""); 
   Serial.println(WIFI_SSID); 
   Serial.println(WIFI_PASS);
-  Serial.println(WLAN_SECURITY); 
+  Serial.println(WIFI_SECURITY); 
   
   // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
   delay(4000); 
    
+}
+
+
+/* ########## Other Functions ########## */
+
+// 
+bool displayConnectionDetails(void)
+{
+  uint32_t ipAddress, netmask, gateway, dhcpserv, dnsserv;
+  
+  if(!cc3000.getIPAddress(&ipAddress, &netmask, &gateway, &dhcpserv, &dnsserv))
+  {
+    Serial.println(F("Unable to retrieve the IP Address!"));
+    return false;
+  }
+  else
+  {
+    Serial.println("Connection info...");
+    Serial.print(F("\nIP Addr: ")); cc3000.printIPdotsRev(ipAddress);
+    Serial.print(F("\nNetmask: ")); cc3000.printIPdotsRev(netmask);
+    Serial.print(F("\nGateway: ")); cc3000.printIPdotsRev(gateway);
+    Serial.print(F("\nDHCPsrv: ")); cc3000.printIPdotsRev(dhcpserv);
+    Serial.print(F("\nDNSserv: ")); cc3000.printIPdotsRev(dnsserv);
+    Serial.println("\n");
+    return true;
+  }
 }
 
 
