@@ -21,22 +21,20 @@
 ************/ 
  
 /* Todo
-    - define wifi connection info 
     - define ip/sitename and directory that we are sending data
     
     - connect to wifi network 
     - check DHCP? 
-    
-    - measure humidity & temperature 
+     
     - make humidity and temp a string 
-    - print the data to serial port 
     - send http request 
-    - update every second 
     
     - create send_request function 
     - connect to proper ip/server 
     - send the request 
     - read answer 
+
+    - Fix SHT11 hardware (software is a-ok)
     
  */
 
@@ -54,28 +52,70 @@
 const int ADAFRUIT_CC3000_IRQ  =  3;   // IRQ Must be on an interrupt pin! 
 const int ADAFRUIT_CC3000_VBAT =  5;   // Can be any pin 
 const int ADAFRUIT_CC3000_CS   =  10;  // Can be any pin 
-//The SPI library sets remaining pins, for the uno: SCK = 13, MISO = 12, MOSI = 11  
-
-// define SHT11 pins 
-const int DATA_PIN  = 6;  // Blue wire! 
-const int CLOCK_PIN = 7;  // Yellow wire! 
-
-//Initialize the CC3000 
+//Create the CC3000 instance (The SPI library sets remaining pins, for the uno: SCK = 13, MISO = 12, MOSI = 11)  
 Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT,
                                        SPI_CLOCK_DIVIDER);
 
-//Initialize the SHT11
-SHT1x sht1x (DATA_PIN, CLOCK_PIN); 
+// define SHT11 pins 
+const int DATA_PIN  = 6;  // Blue wire! 
+const int CLOCK_PIN = 7;  // Yellow wire!
+//Creates the SHT11 instnace 
+SHT1x sht11 (DATA_PIN, CLOCK_PIN); 
+
+
+// Provide Your Wifi Network Information
+const char* WIFI_SSID = ""; // must be less than 32 characters 
+const char* WIFI_PASS = ""; 
+// Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
+const int WLAN_SECURITY =  WLAN_SEC_UNSEC;  
+
+
+
 
 
 void setup(void) 
 {
-  // code goes here 
+  Serial.begin(9600); 
+  Serial.println("If you start me up..."); 
+  
+  /* Initialise the CC3000 */
+  Serial.println(F("\nInitialising the CC3000 ..."));
+  if (!cc3000.begin())
+  {
+    Serial.println(F("Unable to initialise the CC3000! Check your wiring?"));
+    while(1);
+  }
+  
+  /* Delete any old connection data on the module */
+  Serial.println(F("\nDeleting old connection profiles"));
+  if (!cc3000.deleteProfiles()) {
+    Serial.println(F("Failed!"));
+    while(1);
+  }
+  
 }
 
 void loop(void)
-{
-  // code goes here 
+{  
+  // create variables and read values from the sensor  
+  float temp_f = sht11.readTemperatureF(); 
+  float humidity = sht11.readHumidity();  
+  
+  // print it to serial port 
+  Serial.print("Temperature: ");
+  Serial.print(temp_f, DEC); 
+  Serial.print(" F /");
+  Serial.print("Humidity: ");
+  Serial.print(humidity); 
+  Serial.print("%"); 
+  Serial.println(""); 
+  Serial.println(WIFI_SSID); 
+  Serial.println(WIFI_PASS);
+  Serial.println(WLAN_SECURITY); 
+  
+  // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
+  delay(4000); 
+   
 }
 
 
