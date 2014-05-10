@@ -20,9 +20,7 @@
   
 ************/ 
  
-/* Todo
-    - define ip/sitename and directory that we are sending data
-         
+/* Todo         
     - send http request 
     
     - create send_request function 
@@ -67,8 +65,9 @@ const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
 // Set where you want to send requests 
 // ToDo: ask Adafruit why I have to use #define here to make getHostByName to work.  
-#define WEBSITE "www.adafruit.com"
-#define WEBPAGE "/testwifi/index.html"
+#define WEBSITE "mySite"
+#define WEBPAGE "/myRequestDestination.rb"
+int port 80; 
 uint32_t ip; 
 
 void setup(void) 
