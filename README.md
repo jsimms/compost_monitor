@@ -12,7 +12,7 @@ Thanks to [Adafruit](https://github.com/adafruit/Adafruit_CC3000_Library) and [J
 Also thanks to [Open Home Automations](https://github.com/openhomeautomation/wifi-weather-station) for their wifi-weather example
 
 
-Remaining ToDos:
+### Remaining ToDos
 1. Troubleshoot why I can't connect to the complimentary heroku app and send the GET request
 2. successfully read answer from server
 3. Fix sht10 hardware (software is a-ok)
