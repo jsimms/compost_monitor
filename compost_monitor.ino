@@ -23,8 +23,8 @@ SHT1x sht10 (DATA_PIN, CLOCK_PIN);
 
 
 // Provide Your Wifi Network Information
-const char* WIFI_SSID = "Havemeyer Guest"; // must be less than 32 characters
-const char* WIFI_PASS = "guest217";
+const char* WIFI_SSID = "yourWifi"; // must be less than 32 characters
+const char* WIFI_PASS = "yourPass";
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
@@ -165,7 +165,6 @@ void send_request (String request)
   Adafruit_CC3000_Client www = cc3000.connectTCP(ip, port); 
  
   // Send the request 
-  // ToDo: Ask why we use flash memory for the messages here... F()
   if (www.connected()) {
       www.println(request);
       www.println(F("User-agent: CompostMonitor/1.0\r\n"));      
@@ -184,7 +183,6 @@ void send_request (String request)
       Serial.println(c); 
       }
     }
-    
   
   // Disconnect 
   Serial.println("Closing connection...");
