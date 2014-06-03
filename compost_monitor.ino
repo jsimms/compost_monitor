@@ -23,8 +23,8 @@ SHT1x sht10 (DATA_PIN, CLOCK_PIN);
 
 
 // Provide Your Wifi Network Information
-const char* WIFI_SSID = "Havemeyer Guest"; // must be less than 32 characters
-const char* WIFI_PASS = "guest217";
+const char* WIFI_SSID = "yourWifi"; // must be less than 32 characters
+const char* WIFI_PASS = "yourPass";
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
@@ -34,11 +34,6 @@ const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 String route = "/sensor";
 uint32_t ip;
 int port = 80; 
-
-#define IDLE_TIMEOUT_MS  3000      // Amount of time to wait (in milliseconds) with no data 
-                                   // received before closing the connection.  If you know the server
-                                   // you're accessing is quick to respond, you can reduce this value.
-  
 
 void setup(void)
 {
@@ -78,19 +73,38 @@ void setup(void)
     delay(100); // ToDo: Insert a DHCP timeout!
   }
 
+
   // Show the connection details
   while (! displayConnectionDetails()) {
     delay(1000);
-  }  
-  
-  Serial.println(F("-------------------------------------"));
-}
+  }
+
+
+  // Look up the website's IP address
+  // ToDo: Ask Adafruit how exactly this works. I couldn't figure out how an ip is returned by looking at the libraries
+  ip = 0;
+  Serial.print(WEBSITE); Serial.print(F(" -> "));
+  while (ip == 0) {
+    if (! cc3000.getHostByName(WEBSITE, &ip)) {
+      Serial.println(F("Couldn't resolve!"));
+    }
+    delay(500);
+  }
+
+  cc3000.printIPdotsRev(ip);
+  Serial.println("");
+
+  // Close the connection
+  Serial.println(F("Closing connection..."));
+  cc3000.disconnect();
+  Serial.println(F("Connection closed."));
+
+ }
 
 
 
 void loop(void)
 {
-  
   // create variables, get data from the sensor
   float t_f = sht10.readTemperatureF();
   float h = sht10.readHumidity();
@@ -103,16 +117,13 @@ void loop(void)
   Serial.print("Temperature: ");
   Serial.print(temperature);
   Serial.print(" F /");
-  Serial.print(" Humidity: ");
+  Serial.print("Humidity: ");
   Serial.print(humidity);
   Serial.print("%");
   Serial.println("");
 
-  // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory?param1=dog&param2=man"
-  String request = "GET /sensor?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1";
-  Serial.print("Request will be: ");
-  Serial.print(request); 
-  Serial.println("");  
+  // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory/file.rb?param1=dog&param2=man"
+  String request = "GET " + route + "?temp=" + temperature + "&hum=" + humidity + " HTTP/1.0\r\n";
   // Send the request
   send_request(request);
 
@@ -146,58 +157,35 @@ bool displayConnectionDetails(void)
 }
 
 
+// This is the function that the wifi weather station used in their example
 void send_request (String request)
 {
-  
-  // Look up the website's IP address
-  ip = 0;
-  Serial.print(WEBSITE); Serial.print(F(" -> "));
-  while (ip == 0) {
-    if (! cc3000.getHostByName(WEBSITE, &ip)) {
-      Serial.println(F("Couldn't resolve!"));
-    }
-    delay(500);
-  }
-
-  cc3000.printIPdotsRev(ip);
-  Serial.println(""); 
-  Serial.println("");
-  
-  
   // Connect to server 
   Serial.println("Connecting to server...");
   Adafruit_CC3000_Client www = cc3000.connectTCP(ip, port); 
  
   // Send the request 
   if (www.connected()) {
-    www.fastrprint(F("GET /sensor?temp=45&hum=3 HTTP/1.1\r\n"));
-    www.fastrprint(F("Host: weathervane.herokuapp.com\r\n"));
-    www.fastrprint(F("User-Agent: Compost Monitor/1.0\r\n"));
-    www.fastrprint(F("\r\n"));
-    www.println();
-  } else {
-    Serial.println(F("Connection failed"));
-    Serial.println(F(""));   
-    return;
-  }
-
-  Serial.println(F("-------------------------------------"));
-  
-  /* Read data until either the connection is closed, or the idle timeout is reached. */ 
-  unsigned long lastRead = millis();
-  while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) {
-    while (www.available()) {
-      char c = www.read();
-      Serial.print(c);
-      lastRead = millis();
+      www.println(request);
+      www.println(F("User-agent: CompostMonitor/1.0\r\n"));      
+      www.println(F("\r\n"));
+      Serial.println("Connected & data sent successfully...");
+    } 
+    else {
+      Serial.println(F("Connection failed."));    
     }
-  }
-  www.close();
-  Serial.println(F("-------------------------------------"));
-  
-  /* You need to make sure to clean up after yourself or the CC3000 can freak out */
-  /* the next time your try to connect ... */
-  Serial.println(F("\n\nDisconnecting..."));
-  cc3000.disconnect();
 
+    while (www.connected()) {
+      while (www.available()) {
+
+      // Read answer
+      char c = www.read();
+      Serial.println(c); 
+      }
+    }
+  
+  // Disconnect 
+  Serial.println("Closing connection...");
+  Serial.println(""); 
+  www.close(); 
 }
