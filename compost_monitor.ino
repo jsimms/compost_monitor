@@ -30,7 +30,7 @@ const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
 // Server settings and info (where you want to send requests)
 // ToDo: I should ask Adafruit why I have to use #define to make getHostByName to work. Something to do with how pointers in C work?
-#define WEBSITE      "weathervane.herokuapp.com"
+#define HOST      "weathervane.herokuapp.com"
 String route = "/sensor";
 uint32_t ip;
 int port = 80; 
@@ -83,9 +83,9 @@ void setup(void)
   // Look up the website's IP address
   // ToDo: Ask Adafruit how exactly this works. I couldn't figure out how an ip is returned by looking at the libraries
   ip = 0;
-  Serial.print(WEBSITE); Serial.print(F(" -> "));
+  Serial.print(HOST); Serial.print(F(" -> "));
   while (ip == 0) {
-    if (! cc3000.getHostByName(WEBSITE, &ip)) {
+    if (! cc3000.getHostByName(HOST, &ip)) {
       Serial.println(F("Couldn't resolve!"));
     }
     delay(500);
@@ -123,7 +123,7 @@ void loop(void)
   Serial.println("");
 
   // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory/file.rb?param1=dog&param2=man"
-  String request = "GET " + route + "?temp=" + temperature + "&hum=" + humidity + " HTTP/1.0\r\n";
+  String request = "GET " + route + "?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1";
   // Send the request
   send_request(request);
 
@@ -167,8 +167,8 @@ void send_request (String request)
   // Send the request 
   if (www.connected()) {
       www.println(request);
-      www.println(F("User-agent: CompostMonitor/1.0\r\n"));      
-      www.println(F("\r\n"));
+      www.println(F("User-agent: CompostMonitor/1.0"));      
+      www.println(F(""));
       Serial.println("Connected & data sent successfully...");
     } 
     else {
