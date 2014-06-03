@@ -124,7 +124,8 @@ void loop(void)
 
   // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory/file.rb?param1=dog&param2=man"
   String request = "GET " + route + "?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1";
-  // Send the request
+  // Print and Send the request
+  Serial.println("About to send: " + request );  
   send_request(request);
 
   // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
@@ -167,6 +168,7 @@ void send_request (String request)
   // Send the request 
   if (www.connected()) {
       www.println(request);
+      www.println(HOST);
       www.println(F("User-agent: CompostMonitor/1.0"));      
       www.println(F(""));
       Serial.println("Connected & data sent successfully...");
