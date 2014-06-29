@@ -18,9 +18,9 @@ Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ
 // define sht10 pins
 const int DATA_PIN  = 6;  // Blue wire!
 const int CLOCK_PIN = 7;  // Yellow wire!
+
 //Creates the sht10 instnace
 SHT1x sht10 (DATA_PIN, CLOCK_PIN);
-
 
 // Provide Your Wifi Network Information
 const char* WIFI_SSID = "yourWifi"; // must be less than 32 characters
@@ -28,12 +28,13 @@ const char* WIFI_PASS = "yourPass";
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
+#define IDLE_TIMEOUT_MS  3000      // Amount of time to wait (in milliseconds) with no data 
+                                   // received before closing the connection.  If you know the server
+                                   // you're accessing is quick to respond, you can reduce this value.
+
 // Server settings and info (where you want to send requests)
-// ToDo: I should ask Adafruit why I have to use #define to make getHostByName to work. Something to do with how pointers in C work?
 #define HOST      "weathervane.herokuapp.com"
-String route = "/sensor";
 uint32_t ip;
-int port = 80; 
 
 void setup(void)
 {
@@ -79,26 +80,6 @@ void setup(void)
     delay(1000);
   }
 
-
-  // Look up the website's IP address
-  // ToDo: Ask Adafruit how exactly this works. I couldn't figure out how an ip is returned by looking at the libraries
-  ip = 0;
-  Serial.print(HOST); Serial.print(F(" -> "));
-  while (ip == 0) {
-    if (! cc3000.getHostByName(HOST, &ip)) {
-      Serial.println(F("Couldn't resolve!"));
-    }
-    delay(500);
-  }
-
-  cc3000.printIPdotsRev(ip);
-  Serial.println("");
-
-  // Close the connection
-  Serial.println(F("Closing connection..."));
-  cc3000.disconnect();
-  Serial.println(F("Connection closed."));
-
  }
 
 
@@ -123,9 +104,13 @@ void loop(void)
   Serial.println("");
 
   // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory/file.rb?param1=dog&param2=man"
-  String request = "GET " + route + "?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1";
+  String request = "GET /sensor?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1\r\n";
   // Print and Send the request
-  Serial.println("About to send: " + request );  
+  Serial.println("About to send: "); 
+  Serial.print(request);
+  Serial.print(F("Host: weathervane.herokuapp.com\r\n"));
+  Serial.print(F("User-Agent: Compost Monitor/1.0\r\n"));
+  Serial.println();  
   send_request(request);
 
   // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
@@ -161,33 +146,44 @@ bool displayConnectionDetails(void)
 // This is the function that the wifi weather station used in their example
 void send_request (String request)
 {
-  // Connect to server 
-  Serial.println("Connecting to server...");
-  Adafruit_CC3000_Client www = cc3000.connectTCP(ip, port); 
- 
-  // Send the request 
-  if (www.connected()) {
-      www.println(request);
-      www.println(HOST);
-      www.println(F("User-agent: CompostMonitor/1.0"));      
-      www.println(F(""));
-      Serial.println("Connected & data sent successfully...");
-    } 
-    else {
-      Serial.println(F("Connection failed."));    
-    }
-
-    while (www.connected()) {
-      while (www.available()) {
-
-      // Read answer
-      char c = www.read();
-      Serial.println(c); 
-      }
-    }
   
-  // Disconnect 
-  Serial.println("Closing connection...");
-  Serial.println(""); 
-  www.close(); 
+  ip = 0;
+  // Try looking up the website's IP address
+  Serial.print(HOST); Serial.print(F(" -> "));
+  while (ip == 0) {
+    if (! cc3000.getHostByName(HOST, &ip)) {
+      Serial.println(F("Couldn't resolve!"));
+    }
+    delay(500);
+  }
+
+  cc3000.printIPdotsRev(ip);
+  
+  Adafruit_CC3000_Client www = cc3000.connectTCP(ip, 80);
+  if (www.connected()) {
+    www.print(request);
+    www.print(F("Host: weathervane.herokuapp.com\r\n"));
+    www.print(F("User-Agent: Compost Monitor/1.0\r\n"));
+    www.print(F("\r\n"));
+    www.println();
+  } else {
+    Serial.println(F("Connection failed"));    
+    return;
+  }
+
+  Serial.println(F("-------------------------------------"));
+  
+  /* Read data until either the connection is closed, or the idle timeout is reached. */ 
+  unsigned long lastRead = millis();
+  while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) {
+    while (www.available()) {
+      char c = www.read();
+      Serial.print(c);
+      lastRead = millis();
+    }
+  }
+  www.close();
+  Serial.println(F("-------------------------------------"));
+
+  
 }
