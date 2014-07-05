@@ -24,11 +24,11 @@ SHT1x sht10 (DATA_PIN, CLOCK_PIN);
 
 // Provide Your Wifi Network Information
 const char* WIFI_SSID = "yourWifi"; // must be less than 32 characters
-const char* WIFI_PASS = "yourPass";
+const char* WIFI_PASS = "yourWifiPass";
 // Security can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2, and I guess it is an int
 const int WIFI_SECURITY =  WLAN_SEC_WPA2;
 
-#define IDLE_TIMEOUT_MS  3000      // Amount of time to wait (in milliseconds) with no data 
+#define IDLE_TIMEOUT_MS  3000      // Amount of time to wait (in milliseconds) with no data
                                    // received before closing the connection.  If you know the server
                                    // you're accessing is quick to respond, you can reduce this value.
 
@@ -67,7 +67,7 @@ void setup(void)
   Serial.print(F("Connected to ")); Serial.print(WIFI_SSID); Serial.println(F("..."));
 
 
-  // Wait for DHCP to finish (why?)
+  // Wait for DHCP to finish
   Serial.println(F("Request DHCP..."));
   while (!cc3000.checkDHCP())
   {
@@ -103,14 +103,16 @@ void loop(void)
   Serial.print("%");
   Serial.println("");
 
-  // Create the request. Since we will already have IP and PORT from TCP connection, request should look like "directory/file.rb?param1=dog&param2=man"
+  // Create the request.
   String request = "GET /sensor?temp=" + temperature + "&hum=" + humidity + " HTTP/1.1\r\n";
   // Print and Send the request
-  Serial.println("About to send: "); 
+  Serial.println("About to send: ");
   Serial.print(request);
-  Serial.print(F("Host: weathervane.herokuapp.com\r\n"));
+  Serial.print(F("Host: "));
+  Serial.print(HOST);
+  Serial.print(F("\r\n"));
   Serial.print(F("User-Agent: Compost Monitor/1.0\r\n"));
-  Serial.println();  
+  Serial.println();
   send_request(request);
 
   // include at least a 3.6 second delay between pairs of temperature & humidity measurements.
@@ -146,7 +148,7 @@ bool displayConnectionDetails(void)
 // This is the function that the wifi weather station used in their example
 void send_request (String request)
 {
-  
+
   ip = 0;
   // Try looking up the website's IP address
   Serial.print(HOST); Serial.print(F(" -> "));
@@ -158,22 +160,24 @@ void send_request (String request)
   }
 
   cc3000.printIPdotsRev(ip);
-  
+
   Adafruit_CC3000_Client www = cc3000.connectTCP(ip, 80);
   if (www.connected()) {
     www.print(request);
-    www.print(F("Host: weathervane.herokuapp.com\r\n"));
+    www.print(F("Host: "));
+    www.print(HOST);
+    www.print(F("\r\n"));
     www.print(F("User-Agent: Compost Monitor/1.0\r\n"));
     www.print(F("\r\n"));
     www.println();
   } else {
-    Serial.println(F("Connection failed"));    
+    Serial.println(F("Connection failed"));
     return;
   }
 
   Serial.println(F("-------------------------------------"));
-  
-  /* Read data until either the connection is closed, or the idle timeout is reached. */ 
+
+  /* Read data until either the connection is closed, or the idle timeout is reached. */
   unsigned long lastRead = millis();
   while (www.connected() && (millis() - lastRead < IDLE_TIMEOUT_MS)) {
     while (www.available()) {
@@ -185,5 +189,5 @@ void send_request (String request)
   www.close();
   Serial.println(F("-------------------------------------"));
 
-  
+
 }
